@@ -1,0 +1,7 @@
+ssh.config
+.vagrant
+provisioning/site.retry
+apps
+provisioning/hosts
+Vagrantfile
+.DS_Store

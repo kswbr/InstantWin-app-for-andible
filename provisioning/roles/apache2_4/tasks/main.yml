@@ -1,0 +1,22 @@
+---
+- name: check if exist apache
+  command: service httpd status
+  ignore_errors: True
+  register: check_apache
+
+# Apacheのインストール
+- include: install.yml
+  when: check_apache|failed
+
+- name: httpd auto start
+  service:
+    name: httpd
+    state: started
+    enabled: yes
+
+- include: config.yml
+
+- name: restart apache
+  service: name=httpd state=restarted
+
+

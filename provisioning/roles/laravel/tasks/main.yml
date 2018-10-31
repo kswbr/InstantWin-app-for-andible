@@ -1,0 +1,99 @@
+####
+# Laravel動かすためにSELinuxを無効化したほうがよさげ
+####
+- name: install libselinux-python
+  yum: name=libselinux-python state=latest
+
+- name: disable SELinux
+  selinux: state=disabled
+
+- name: check project-myapp
+  stat:
+    path: "{{ homedir }}/apps/myapp"
+  register: check_myapp
+
+- name: create-laravel myapp
+  composer:
+    command: create-project
+    arguments: laravel/laravel myapp 5.5.*
+    working_dir: "{{ homedir }}/apps"
+    prefer_dist: yes
+  when: not check_myapp.stat.exists
+
+- name: composer-self update
+  composer:
+    command: self-update
+    working_dir: "{{ homedir }}/apps/myapp"
+
+- name: composer-install myapp
+  composer:
+    command: install
+    optimize-autoloader: yes
+    no_dev: false
+    working_dir: "{{ homedir }}/apps/myapp"
+
+# - name: composer require phpstan-laravel
+#   become: no
+#   composer:
+#     command: require
+#     arguments: Weebly/phpstan-laravel
+#     no_dev: false
+#     working_dir: "{{ homedir }}/apps/myapp"
+#   when: not check_myapp.stat.exists
+#
+# - name: put phpstan.neon
+#   template: 'src=phpstan.neon dest={{ homedir }}/apps/myapp/phpstan.neon'
+
+- name: check .env
+  stat:
+    path: "{{ homedir }}/apps/myapp/.env"
+  register: check_env
+
+- name: create .env
+  command: 'cp -p {{ homedir }}/apps/myapp/.env.example {{ homedir }}/apps/myapp/.env'
+  when: not check_env.stat.exists
+
+- name: key generate
+  command: "php {{ homedir }}/apps/myapp/artisan key:generate"
+  when: not check_env.stat.exists
+
+- name: rewrite .env
+  lineinfile:
+    dest={{ homedir }}/apps/myapp/.env
+    state=present
+    backrefs=yes
+    regexp={{ item.regexp }}
+    line={{ item.line }}
+  with_items:
+    - regexp: 'DB_DATABASE=homestead'
+      line: 'DB_DATABASE=localdb'
+    - regexp: 'DB_USERNAME=homestead'
+      line: 'DB_USERNAME=root'
+    - regexp: 'DB_PASSWORD=secret'
+      line: 'DB_PASSWORD={{ mysql_root_passwd }}'
+  when: not check_env.stat.exists
+
+- name: create .env.testing
+  command: 'cp -p {{ homedir }}/apps/myapp/.env {{ homedir }}/apps/myapp/.env.testing'
+  when: not check_env.stat.exists
+
+- name: rewrite .env.testing
+  lineinfile:
+    dest={{ homedir }}/apps/myapp/.env.testing
+    state=present
+    backrefs=yes
+    regexp={{ item.regexp }}
+    line={{ item.line }}
+  with_items:
+    - regexp: 'DB_DATABASE=localdb'
+      line: 'DB_DATABASE=testdb'
+    - regexp: 'DB_PASSWORD=secret'
+      line: 'DB_PASSWORD={{ mysql_root_passwd }}'
+  when: not check_env.stat.exists
+
+- name: put schedule
+  template: 'src=schedule dest={{ homedir }}'
+
+- name: set crontab
+  become: no
+  command: 'crontab {{ homedir }}/schedule'

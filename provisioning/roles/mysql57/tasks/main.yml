@@ -1,0 +1,93 @@
+---
+
+- name: install libselinux-python
+  yum: name=libselinux-python
+
+- name: selinux desabled
+  selinux: state=disabled
+
+- name: yum remove mariadb-libs
+  yum: name=mariadb-libs state=absent
+
+- name: get mysql repo
+  get_url: url=http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm dest={{ tmp }}/mysql57-community-release-el7-7.noarch.rpm
+
+- name: yum install mysql repo
+  yum: name={{ tmp }}/mysql57-community-release-el7-7.noarch.rpm
+
+- name: yum install mysql-community-server
+  yum: name=mysql-community-server
+
+- name: yum install MySQL-python
+  yum: name=MySQL-python
+
+- name: service start mysql
+  service: name=mysqld enabled=yes state=started
+
+- name: chack root login
+  shell: mysql -uroot -p'{{ mysql_root_passwd }}'
+  register: root_login_result
+  ignore_errors: True
+
+- name: get temporary password
+  shell: cat /var/log/mysqld.log | grep "temporary password" | awk '{print $11}'
+  register: mysql_default_password
+  when: root_login_result.rc != 0
+
+- name: change root user password for updating expiration date
+  shell: |
+    mysql -u root -p'{{ mysql_default_password.stdout }}' --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Do_You_Love_MySQL5.7?';"
+  when: root_login_result.rc != 0
+
+- name: uninstall validate_password
+  shell: |
+    mysql -u root -p"Do_You_Love_MySQL5.7?" --connect-expired-password -e "uninstall plugin validate_password;"
+  when: root_login_result.rc != 0
+
+- name: change root user password
+  shell: |
+    mysql -u root -p'Do_You_Love_MySQL5.7?' --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_passwd }}';" # 任意のパスワード
+  when: root_login_result.rc != 0
+
+
+- name: create root my.cnf
+  become: yes
+  template:
+    src=my.cnf
+    dest=/root/my.cnf
+    owner=root
+    group=root
+    mode=0600
+
+- name: rewirte /root/my.cnf
+  become: yes
+  lineinfile:
+    dest=/root/my.cnf
+    state=present
+    backrefs=yes
+    regexp={{ item.regexp }}
+    line={{ item.line }}
+
+  with_items:
+    - regexp: 'password=password'
+      line: 'password={{ mysql_root_passwd }}'
+
+- name: create databases
+  mysql_db:
+    db: "{{ item.db_name }}"
+    login_host: localhost
+    login_user: root
+    login_password: "{{ mysql_root_passwd }}"
+    state: present
+    encoding: utf8
+
+  with_items:
+    - db_name: localdb
+    - db_name: testdb
+  ignore_errors: True
+
+- name: migration
+  command: "php {{ homedir }}/apps/myapp/artisan migrate"
+
+- name: migration testing
+  command: "php {{ homedir }}/apps/myapp/artisan migrate --env=testing"

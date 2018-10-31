@@ -1,0 +1,11 @@
+{
+  "extends": ["vue", "plugin:vue/recommended"],
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "vue/max-attributes-per-line": 0,
+    "vue/require-default-prop": 0,
+    "camelcase": 0
+  }
+}

@@ -1,0 +1,22 @@
+- name: install chromedriver
+  yum: name=https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm state=present
+
+- name: install unzip
+  yum: name=unzip state=installed
+
+
+- name: create dir for noto-font
+  become: true
+  file: "path=/usr/share/fonts/noto state=directory"
+
+
+- name: Download and unzip font
+  unarchive:
+    src: https://noto-website-2.storage.googleapis.com/pkgs/NotoSansCJKjp-hinted.zip
+    dest: "/usr/share/fonts/noto"
+    remote_src: yes
+    mode: 0644
+
+- name: clear cache
+  command: "fc-cache -fv"
+

@@ -1,0 +1,58 @@
+---
+- hosts: vagrants
+  become: yes
+  user: vagrant
+  connection: local
+  vars:
+    env: local
+    srcpath: /usr/local/src
+    homedir: /home/vagrant
+    tmp: /tmp
+    mysql_root_passwd: RootPass4Local$
+  tasks:
+    - name: install packages zsh
+      ping:
+  roles:
+    - git
+    - php7
+    - apache2_4
+    - chrome
+    - laravel
+    - mysql57
+    - npm
+
+- hosts: ec2-dev
+  become: true
+  user: centos
+  vars:
+    env: development
+    srcpath: /usr/local/src
+    homedir: /home/centos
+    tmp: /tmp
+    mysql_root_passwd: RootPass4Local$
+  tasks:
+    - name: install packages zsh
+      ping:
+  roles:
+    - git
+    - php7
+    - apache2_4
+    - ec2
+
+- hosts: ec2-prd
+  become: true
+  user: centos
+  vars:
+    env: development
+    srcpath: /usr/local/src
+    homedir: /home/centos
+    tmp: /tmp
+    mysql_root_passwd: RootPass4Local$
+  tasks:
+    - name: install packages zsh
+      ping:
+  roles:
+    - git
+    - php7
+    - apache2_4
+    - ec2

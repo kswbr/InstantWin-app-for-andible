@@ -1,0 +1,19 @@
+---
+#####
+# Apacheのインストール
+#####
+
+# APR-util のために expat-devel が必要
+- name: install expat-devel
+  yum: name=expat-devel state=installed
+
+- name: install gcc
+  yum: name=gcc state=installed
+
+- name: install openssl-devel
+  yum: name=openssl-devel state=installed
+
+- name: install apache
+  yum: name=httpd state=present
+
+

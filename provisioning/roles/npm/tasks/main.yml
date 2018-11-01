@@ -1,7 +1,7 @@
 ---
-- name: setup nodejs8.x
+- name: setup nodejs10.x
   become: yes
-  shell: curl -sL https://rpm.nodesource.com/setup_8.x | sudo -E bash -
+  shell: curl -sL https://rpm.nodesource.com/setup_10.x | sudo -E bash -
 - name: installing latest version of node.js
   become: yes
   yum:

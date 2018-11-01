@@ -8,6 +8,9 @@
 - include: install.yml
   when: check_apache|failed
 
+- name: install libpng-devel
+  yum: name=libpng-devel state=installed
+
 - name: httpd auto start
   service:
     name: httpd
